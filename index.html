@@ -1099,12 +1099,12 @@ function guestMode(){
     window.addEventListener("touchstart", (e) => {
       if(e.target.closest("#pauseBtn")) return;
       if(e.target.closest("button,input,.modal,.login-mini,.pre-start")) return;
-      warnOrBreak("触摸屏幕");
+      warnOrBreak("⚠检测到触摸屏幕");
     }, {passive:true});
 
     window.addEventListener("keydown", (e) => {
       if(e.key === "Tab") return;
-      warnOrBreak("键盘输入");
+      warnOrBreak("⚠检测到键盘输入");
     });
 
     function breakForLeavingPage(){
