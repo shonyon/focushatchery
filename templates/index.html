@@ -745,7 +745,7 @@
         hatched = addProgress(minutes);
         setState(`已暂停，本次孵蛋 ${minutes} 分钟，已计入当前蛋进度。`, "strong");
       }else{
-        setState("已暂停，但未满 15 分钟，本次不计入进度。", "");
+        setState("未满 15 分钟，本次不计入进度。", "");
       }
 
       $("egg").classList.remove("running");
@@ -765,7 +765,7 @@
       if(!running || !armed || breaking) return;
       touchCount += 1;
       if(touchCount === 1){
-        setState("你快弄碎我了，不要再动了。", "danger");
+        setState("🐥家要塌了，你确定你还要动吗T_T。", "danger");
         return;
       }
       breakEgg(reason);
@@ -812,7 +812,7 @@
       if(/[^A-Za-z0-9]/.test(password)) score++;
       if(!password) return { level:"", text:"至少 8 位，建议包含字母和数字。" };
       if(score <= 2) return { level:"weak", text:"密码强度：弱，建议包含字母和数字。" };
-      if(score === 3) return { level:"medium", text:"密码强度：中等。" };
+      if(score === 5) return { level:"medium", text:"密码强度：中等。" };
       return { level:"strong", text:"密码强度：强。" };
     }
 
@@ -956,7 +956,7 @@
       if(now - lastBlurBreakAt < 800) return;
       lastBlurBreakAt = now;
       touchCount = 2;
-      breakEgg("孵蛋期间不要切出孵蛋页面哦");
+      breakEgg("孵蛋期间不要切出孵蛋页面o");
     }
 
     window.addEventListener("blur", breakForLeavingPage);
