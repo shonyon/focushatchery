@@ -886,7 +886,7 @@ function fmt(sec){
       if(!running || !armed || breaking) return;
       touchCount += 1;
       if(touchCount === 1){
-        setState("你快弄碎我了，不要再动了。", "danger");
+        setState("停停停，离我远点", "danger");
         return;
       }
       breakEgg(reason);
