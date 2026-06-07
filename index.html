@@ -1069,7 +1069,7 @@ function guestMode(){
     window.addEventListener("mousedown", (e) => {
       if(e.target.closest("#pauseBtn")) return;
       if(e.target.closest("button,input,.modal,.login-mini,.pre-start")) return;
-      warnOrBreak("按动鼠标键");
+      warnOrBreak("⚠检测到按动鼠标键");
     });
 
     window.addEventListener("mousemove", () => {
