@@ -935,7 +935,7 @@
       if(now - moveStartTime >= 5000){
         moveStartTime = 0;
         clearTimeout(moveResetTimer);
-        warnOrBreak("连续移动光标 5 秒");
+        warnOrBreak("偷偷摸摸干嘛呢o\/o");
       }
     });
 
@@ -956,7 +956,7 @@
       if(now - lastBlurBreakAt < 800) return;
       lastBlurBreakAt = now;
       touchCount = 2;
-      breakEgg("孵蛋期间不要切出孵蛋页面哦");
+      breakEgg("孵蛋期间不要切出孵蛋页面o");
     }
 
     window.addEventListener("blur", breakForLeavingPage);
