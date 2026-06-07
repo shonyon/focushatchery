@@ -574,7 +574,45 @@
 "我加载失败但我很礼貌"
     ];
 
-    let guestData = JSON.parse(localStorage.getItem(GUEST_KEY) || JSON.stringify(defaultRecord()));
+    function readStorage(key){
+      try{
+        return localStorage.getItem(key);
+      }catch(e){
+        console.warn("无法读取本地存储：", e);
+        return null;
+      }
+    }
+
+    function writeStorage(key, value){
+      try{
+        localStorage.setItem(key, value);
+      }catch(e){
+        console.warn("无法写入本地存储：", e);
+      }
+    }
+
+    function removeStorage(key){
+      try{
+        localStorage.removeItem(key);
+      }catch(e){
+        console.warn("无法删除本地存储：", e);
+      }
+    }
+
+    function safeLoad(key, fallback){
+      try{
+        const raw = readStorage(key);
+        if(!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : fallback;
+      }catch(e){
+        console.warn("本地存储数据损坏，已重置：", key, e);
+        removeStorage(key);
+        return fallback;
+      }
+    }
+
+    let guestData = safeLoad(GUEST_KEY, defaultRecord());
     let currentUser = null;
     let running = false;
     let armed = false;
@@ -611,15 +649,15 @@ const USERS_KEY = "focus-hatchery-users-v1";
 const CURRENT_USER_KEY = "focus-hatchery-current-user-v1";
 
 function loadUsers(){
-  return JSON.parse(localStorage.getItem(USERS_KEY) || "{}");
+  return safeLoad(USERS_KEY, {});
 }
 
 function saveUsers(users){
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  writeStorage(USERS_KEY, JSON.stringify(users));
 }
 
 async function loadUserStats(){
-  const savedUser = localStorage.getItem(CURRENT_USER_KEY);
+  const savedUser = readStorage(CURRENT_USER_KEY);
   if(!savedUser) return;
 
   const users = loadUsers();
@@ -646,7 +684,7 @@ async function saveData(){
     users[currentUser].data = cachedUserData;
     saveUsers(users);
   }else{
-    localStorage.setItem(GUEST_KEY, JSON.stringify(guestData));
+    writeStorage(GUEST_KEY, JSON.stringify(guestData));
   }
 }
 function fmt(sec){
@@ -935,7 +973,7 @@ async function register(){
 
   currentUser = username;
   cachedUserData = users[username].data;
-  localStorage.setItem(CURRENT_USER_KEY, username);
+  writeStorage(CURRENT_USER_KEY, username);
 
   $("passwordInput").value = "";
   closeModal();
@@ -961,7 +999,7 @@ async function login(){
 
   currentUser = username;
   cachedUserData = users[username].data || defaultRecord();
-  localStorage.setItem(CURRENT_USER_KEY, username);
+  writeStorage(CURRENT_USER_KEY, username);
 
   $("taskInput").value = cachedUserData.lastTask || "";
   $("minutesInput").value = cachedUserData.lastMinutes || 15;
@@ -975,7 +1013,7 @@ async function login(){
 function guestMode(){
   currentUser = null;
   cachedUserData = null;
-  localStorage.removeItem(CURRENT_USER_KEY);
+  removeStorage(CURRENT_USER_KEY);
   closeModal();
   setState("游客模式也可以孵蛋。");
   render();
@@ -1085,13 +1123,20 @@ function guestMode(){
     });
 
     window.addEventListener("load", async () => {
-      updatePasswordTip();
-      await loadUserStats();
-      const data = getData();
-      $("taskInput").value = data.lastTask || "";
-      $("minutesInput").value = data.lastMinutes || 15;
-      render();
-      openModal();
+      try{
+        updatePasswordTip();
+        await loadUserStats();
+        const data = getData();
+        $("taskInput").value = data.lastTask || "";
+        $("minutesInput").value = data.lastMinutes || 15;
+        render();
+      }catch(e){
+        console.error("页面初始化失败，已使用默认游客数据：", e);
+        currentUser = null;
+        cachedUserData = null;
+        guestData = defaultRecord();
+        render();
+      }
     });
   </script>
 </body>
