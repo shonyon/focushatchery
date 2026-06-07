@@ -607,50 +607,48 @@
       return currentUser ? cachedUserData : guestData;
     }
 
-    async function api(url, body=null){
-      const opts = body ? {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(body)
-      } : {};
-      const res = await fetch(url, opts);
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "请求失败");
-      return data;
+const USERS_KEY = "focus-hatchery-users-v1";
+const CURRENT_USER_KEY = "focus-hatchery-current-user-v1";
+
+function loadUsers(){
+  return JSON.parse(localStorage.getItem(USERS_KEY) || "{}");
+}
+
+function saveUsers(users){
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+async function loadUserStats(){
+  const savedUser = localStorage.getItem(CURRENT_USER_KEY);
+  if(!savedUser) return;
+
+  const users = loadUsers();
+  if(!users[savedUser]) return;
+
+  currentUser = savedUser;
+  cachedUserData = users[savedUser].data || defaultRecord();
+
+  $("taskInput").value = cachedUserData.lastTask || "";
+  $("minutesInput").value = cachedUserData.lastMinutes || 15;
+}
+
+async function saveData(){
+  if(currentUser){
+    const users = loadUsers();
+
+    if(!users[currentUser]){
+      users[currentUser] = {
+        password: "",
+        data: defaultRecord()
+      };
     }
 
-    async function loadUserStats(){
-      try{
-        const data = await api("/api/stats");
-        if(data.loggedIn){
-          currentUser = data.username;
-          cachedUserData = {
-            chicks: data.chicks || 0,
-            totalFocus: data.totalFocus || 0,
-            currentMinutes: Number(data.currentMinutes || 0),
-            brokenCount: data.brokenCount || 0,
-            lastTask: data.lastTask || "",
-            lastMinutes: data.lastMinutes || 15
-          };
-          $("taskInput").value = cachedUserData.lastTask || "";
-          $("minutesInput").value = cachedUserData.lastMinutes || 15;
-        }
-      }catch(e){}
-    }
-
-    async function saveData(){
-      if(currentUser){
-        try{ await api("/api/stats", cachedUserData); }catch(e){}
-      }else{
-        localStorage.setItem(GUEST_KEY, JSON.stringify(guestData));
-      }
-    }
-
-    function fmt(sec){
-      const m = String(Math.floor(sec / 60)).padStart(2, "0");
-      const s = String(sec % 60).padStart(2, "0");
-      return `${m}:${s}`;
-    }
+    users[currentUser].data = cachedUserData;
+    saveUsers(users);
+  }else{
+    localStorage.setItem(GUEST_KEY, JSON.stringify(guestData));
+  }
+}
 
     function normalizeMinutes(){
       let value = Number($("minutesInput").value);
@@ -902,45 +900,81 @@
       $("passwordTip").textContent = result.text;
     }
 
-    async function register(){
-      const username = $("usernameInput").value.trim();
-      const password = $("passwordInput").value;
-      try{
-        const result = await api("/api/register", { username, password });
-        currentUser = result.username;
-        await loadUserStats();
-        $("passwordInput").value = "";
-        closeModal();
-        setState("账号创建成功，开始孵蛋吧。");
-        render();
-      }catch(e){
-        alert(e.message);
-      }
-    }
+async function register(){
+  const username = $("usernameInput").value.trim();
+  const password = $("passwordInput").value;
 
-    async function login(){
-      const username = $("usernameInput").value.trim();
-      const password = $("passwordInput").value;
-      try{
-        const result = await api("/api/login", { username, password });
-        currentUser = result.username;
-        await loadUserStats();
-        $("passwordInput").value = "";
-        closeModal();
-        setState("登录成功，开始孵蛋吧。");
-        render();
-      }catch(e){
-        alert(e.message);
-      }
-    }
+  if(!username){
+    alert("请输入用户名。");
+    return;
+  }
 
-    function guestMode(){
-      currentUser = null;
-      cachedUserData = null;
-      closeModal();
-      setState("游客模式也可以孵蛋。");
-      render();
-    }
+  if(password.length < 8){
+    alert("密码至少 8 位。");
+    return;
+  }
+
+  const users = loadUsers();
+
+  if(users[username]){
+    alert("这个用户名已经存在。");
+    return;
+  }
+
+  users[username] = {
+    password: password,
+    data: defaultRecord()
+  };
+
+  saveUsers(users);
+
+  currentUser = username;
+  cachedUserData = users[username].data;
+  localStorage.setItem(CURRENT_USER_KEY, username);
+
+  $("passwordInput").value = "";
+  closeModal();
+  setState("账号创建成功，开始孵蛋吧。");
+  render();
+}
+
+async function login(){
+  const username = $("usernameInput").value.trim();
+  const password = $("passwordInput").value;
+
+  const users = loadUsers();
+
+  if(!users[username]){
+    alert("账号不存在。");
+    return;
+  }
+
+  if(users[username].password !== password){
+    alert("密码错误。");
+    return;
+  }
+
+  currentUser = username;
+  cachedUserData = users[username].data || defaultRecord();
+  localStorage.setItem(CURRENT_USER_KEY, username);
+
+  $("taskInput").value = cachedUserData.lastTask || "";
+  $("minutesInput").value = cachedUserData.lastMinutes || 15;
+  $("passwordInput").value = "";
+
+  closeModal();
+  setState("登录成功，开始孵蛋吧。");
+  render();
+}
+
+function guestMode(){
+  currentUser = null;
+  cachedUserData = null;
+  localStorage.removeItem(CURRENT_USER_KEY);
+  closeModal();
+  setState("游客模式也可以孵蛋。");
+  render();
+}
 
     function openModal(){ $("loginModal").style.display = "flex"; }
     function closeModal(){ $("loginModal").style.display = "none"; }
